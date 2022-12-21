@@ -1,0 +1,180 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "For_each": {
+                "actions": {
+                    "Acrescentar_à_variável_de_cadeia": {
+                        "inputs": {
+                            "name": "To_Concat",
+                            "value": "@concat(items('For_each'), ';')"
+                        },
+                        "runAfter": {},
+                        "type": "AppendToStringVariable"
+                    }
+                },
+                "foreach": "@body('JSON_Validator')['To']",
+                "runAfter": {
+                    "Inicializar_variável": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "Inicializar_variável": {
+                "inputs": {
+                    "variables": [
+                        {
+                            "name": "To_Concat",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "runAfter": {
+                    "JSON_Validator": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "InitializeVariable"
+            },
+            "JSON_Validator": {
+                "inputs": {
+                    "content": "@triggerBody()",
+                    "schema": {
+                        "properties": {
+                            "Attachments": {
+                                "items": {
+                                    "properties": {
+                                        "ContentBytes": {
+                                            "type": "string"
+                                        },
+                                        "Name": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "ContentBytes",
+                                        "Name"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            "Body": {
+                                "type": "string"
+                            },
+                            "Subject": {
+                                "type": "string"
+                            },
+                            "To": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "To",
+                            "Subject",
+                            "Body"
+                        ],
+                        "type": "object"
+                    }
+                },
+                "runAfter": {},
+                "type": "ParseJson"
+            },
+            "Send_Mail": {
+                "inputs": {
+                    "body": {
+                        "Attachments": "@triggerBody()?['Attachments']",
+                        "Body": "<p>@{triggerBody()?['Body']}</p>",
+                        "Subject": "@triggerBody()?['Subject']",
+                        "To": "@variables('To_Concat')"
+                    },
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['gmail']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "path": "/v2/Mail"
+                },
+                "runAfter": {
+                    "For_each": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "ApiConnection"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "manual": {
+                "inputs": {
+                    "method": "POST",
+                    "schema": {
+                        "properties": {
+                            "Attachments": {
+                                "items": {
+                                    "properties": {
+                                        "ContentBytes": {
+                                            "type": "string"
+                                        },
+                                        "Name": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "ContentBytes",
+                                        "Name"
+                                    ],
+                                    "type": "object"
+                                },
+                                "type": "array"
+                            },
+                            "Body": {
+                                "type": "string"
+                            },
+                            "Subject": {
+                                "type": "string"
+                            },
+                            "To": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "To",
+                            "Subject",
+                            "Body"
+                        ],
+                        "type": "object"
+                    }
+                },
+                "kind": "Http",
+                "type": "Request"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "gmail": {
+                    "connectionId": "/subscriptions/6f5391e6-0869-48a4-b92c-9cbbe3e187e9/resourceGroups/estudo/providers/Microsoft.Web/connections/gmail-1",
+                    "connectionName": "gmail-1",
+                    "id": "/subscriptions/6f5391e6-0869-48a4-b92c-9cbbe3e187e9/providers/Microsoft.Web/locations/brazilsouth/managedApis/gmail"
+                }
+            }
+        }
+    }
+}
